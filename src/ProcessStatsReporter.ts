@@ -23,7 +23,7 @@ declare interface ProcessStatsReporter extends EventEmitter {
 
 class ProcessStatsReporter extends EventEmitter {
 
-  constructor({ pollInterval = 1000 }: { pollInterval: number}) {
+  constructor({ pollInterval } = { pollInterval: 1000}) {
     super();
     this.pollInterval = pollInterval;
   }
