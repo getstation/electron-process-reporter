@@ -1,6 +1,6 @@
 # electron-process-reporter
 
-Utility to get extract interesting reports of an Electron application.
+Utility to extract interesting process reports of an Electron application.
 
 ## Installation 
 
