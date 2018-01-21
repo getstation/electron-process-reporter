@@ -1,6 +1,6 @@
 {
   "name": "electron-process-reporter",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "test": "mocha --opts tests/mocha.opts tests/**/*-test.{ts,tsx} && npm run lint && npm run build",
     "lint": "eslint 'src/**/*.{ts,tsx}' 'tests/**/*.{ts,tsx}'",
@@ -41,6 +41,7 @@
     "typescript-eslint-parser": "^8.0.0"
   },
   "dependencies": {
-    "memoizee": "^0.4.11"
+    "memoizee": "^0.4.11",
+    "rxjs": "^5.5.6"
   }
 }

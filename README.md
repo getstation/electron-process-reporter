@@ -11,12 +11,9 @@ $ npm install electron-process-reporter
 ## Usage
 
 ```js
-import { ProcessStatsReporter } from electron-process-reporter;
+import { app } from 'electron';
+import { onProcessMetricReport } from 'electron-process-reporter';
 
-const reporter = new ProcessStatsReporter();
-reporter.on('report', report => {
-  console.log(report)
-});
-// will start polling and emits a report
-report.start();
+onProcessMetricReport(app) // returns a rx.Observable
+  .subscribe(report => console.log(report))
 ```
