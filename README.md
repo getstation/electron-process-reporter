@@ -12,8 +12,8 @@ $ npm install electron-process-reporter
 
 ```js
 import { app } from 'electron';
-import { onProcessMetricReport } from 'electron-process-reporter';
+import { onExtendedProcessMetrics } from 'electron-process-reporter';
 
-onProcessMetricReport(app) // returns a rx.Observable
+onExtendedProcessMetrics(app) // returns a rx.Observable
   .subscribe(report => console.log(report))
 ```
