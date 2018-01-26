@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { webContents } from 'electron';
+import * as memoize from 'memoizee';
 
 import extractURLDomain from './extractURLDomain';
 import { ExtendedProcessMetric } from './index';
@@ -14,13 +15,31 @@ export interface onProcessMetricsOptions{
   samplingInterval?: number
 }
 
+let getSharedProcessMetricsPoller = (app: Electron.App, samplingInterval: number) => Observable
+  .timer(0, samplingInterval)
+  .map(() => {
+    console.log('calling app metrics');
+    return app.getAppMetrics();
+  })
+  .share();
+
+getSharedProcessMetricsPoller = memoize(getSharedProcessMetricsPoller);
+
+/**
+ * Returns an Observable that emits Electron.ProcessMetrics[] on a regular interval.
+ * 
+ * For a given `app` and a given `samplingInterval`, the returned observable is shared
+ * for performance reasons.
+ * 
+ * options.samplingInterval = 1000 (1s) by default 
+ * @param app 
+ * @param options 
+ */
 export const onProcessMetrics = (app: Electron.App, options: onProcessMetricsOptions) => {
   options = { samplingInterval: 1000, ...options };
-  return Observable
-    .timer(0, options.samplingInterval)
-    .map(() => app.getAppMetrics());
+  return getSharedProcessMetricsPoller(app, options.samplingInterval)
 }
-    
+
 
 export interface ExtendedProcessMetric extends Electron.ProcessMetric {
   webContents?: {
