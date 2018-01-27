@@ -17,10 +17,7 @@ export interface onProcessMetricsOptions{
 
 let getSharedProcessMetricsPoller = (app: Electron.App, samplingInterval: number) => Observable
   .timer(0, samplingInterval)
-  .map(() => {
-    console.log('calling app metrics');
-    return app.getAppMetrics();
-  })
+  .map(() => app.getAppMetrics())
   .share();
 
 getSharedProcessMetricsPoller = memoize(getSharedProcessMetricsPoller);
