@@ -2,3 +2,5 @@ node_modules
 lib
 npm-debug.log
 package-lock.json
+/.idea
+/yarn-error.log
