@@ -41,16 +41,23 @@ const getAppUsage = (pid: number): Promise<PidUsage[]> => {
     .then((usages: any) => Object.values(usages) as PidUsage[]);
 };
 
-let getSharedProcessMetricsPoller = (pid: number, samplingInterval: number) =>
+let getSharedProcessMetricsPollerByPid = (pid: number, samplingInterval: number) =>
   Observable.timer(0, samplingInterval)
     .map(() => Observable.fromPromise(getAppUsage(pid)))
     .mergeAll()
     .share();
 
-getSharedProcessMetricsPoller = memoize(getSharedProcessMetricsPoller);
+getSharedProcessMetricsPollerByPid = memoize(getSharedProcessMetricsPollerByPid);
+
+let getSharedProcessMetricsPollerByApp = (app: Electron.App, samplingInterval: number) =>
+  Observable.timer(0, samplingInterval)
+    .map(() => app.getAppMetrics())
+    .share();
+
+getSharedProcessMetricsPollerByApp = memoize(getSharedProcessMetricsPollerByApp);
 
 /**
- * Returns an Observable that emits Electron.ProcessMetrics[] on a regular interval.
+ * Returns an Observable that emits Electron.ProcessMetric[] on a regular interval.
  *
  * For a given `app` and a given `samplingInterval`, the returned observable is shared
  * for performance reasons.
@@ -59,9 +66,27 @@ getSharedProcessMetricsPoller = memoize(getSharedProcessMetricsPoller);
  * @param app
  * @param options
  */
-export const onProcessMetrics = (pid: number, options: onProcessMetricsOptions): Observable<PidUsage[]> => {
+export const onProcessMetrics = (
+  app: Electron.App,
+  options: onProcessMetricsOptions
+): Observable<Electron.ProcessMetric[]> => {
   options = { samplingInterval: 1000, ...options };
-  return getSharedProcessMetricsPoller(pid, options.samplingInterval);
+  return getSharedProcessMetricsPollerByApp(app, options.samplingInterval);
+};
+
+/**
+ * Returns an Observable that emits PidUsage[] on a regular interval.
+ *
+ * For a given `pid` and a given `samplingInterval`, the returned observable is shared
+ * for performance reasons.
+ *
+ * options.samplingInterval = 1000 (1s) by default
+ * @param pid
+ * @param options
+ */
+export const onProcessMetricsForPid = (pid: number, options: onProcessMetricsOptions): Observable<PidUsage[]> => {
+  options = { samplingInterval: 1000, ...options };
+  return getSharedProcessMetricsPollerByPid(pid, options.samplingInterval);
 };
 
 export interface ExtendedProcessMetric extends Electron.ProcessMetric {
@@ -125,6 +150,10 @@ export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
  * Will emit an array `PidUsage` when a process exceeds the
  * `options.percentCPUUsageThreshold` on more than `options.samplesCount`
  * samples.
+ * It monitors the whole tree of pids, the root beeing the parent of `pid`.
+ * The reason behind this is that the `process.pid` of the main process is at the same
+ * level as all renderers.
+ * So we fetch their common ancestor, which is the `ppid` of the main process.
  *
  * Default `options.samplesCount` = 10
  * Default `options.percentCPUUsageThreshold` = 80
@@ -132,14 +161,14 @@ export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
  * @param pid the pid of the main process
  * @param options
  */
-export const onExcessiveCPUUsageSimple = (pid: number, options: onExcessiveCPUUsageOptions) => {
+export const onExcessiveCPUUsageFromMainPid = (pid: number, options: onExcessiveCPUUsageOptions) => {
   options = {
     samplesCount: 10,
     percentCPUUsageThreshold: 80,
     ...options,
   };
 
-  return onProcessMetrics(pid, options)
+  return onProcessMetricsForPid(pid, options)
     .map(appUsage => Observable.from(appUsage))
     .mergeAll()
     .groupBy(appUsage => appUsage.pid)
@@ -166,17 +195,19 @@ export const onExcessiveCPUUsage = (app: Electron.App, options: onExcessiveCPUUs
   options = {
     samplesCount: 10,
     percentCPUUsageThreshold: 80,
-    ...options
+    ...options,
   };
 
   return onExtendedProcessMetrics(app, options)
     .map(report => Observable.from(report))
     .mergeAll()
     .groupBy(processMetric => processMetric.pid)
-    .map(g => g.bufferCount(options.samplesCount)).mergeAll()
+    .map(g => g.bufferCount(options.samplesCount))
+    .mergeAll()
     .filter(processMetricsSamples => {
-      const excessiveSamplesCount = processMetricsSamples
-        .filter(p => p.cpu.percentCPUUsage >= options.percentCPUUsageThreshold).length;
+      const excessiveSamplesCount = processMetricsSamples.filter(
+        p => p.cpu.percentCPUUsage >= options.percentCPUUsageThreshold
+      ).length;
       return excessiveSamplesCount == processMetricsSamples.length;
-    })
-}
+    });
+};
