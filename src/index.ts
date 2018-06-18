@@ -36,7 +36,7 @@ getPpid = memoize(getPpid, { promise: true });
 
 const getAppUsage = (pid: number): Promise<PidUsage[]> => {
   return getPpid(pid)
-    .then((ppid: number) => pidtree(ppid, { root: true }))
+    .then(pidtree)
     .then(pidusage)
     .then((usages: any) => Object.values(usages) as PidUsage[]);
 };
