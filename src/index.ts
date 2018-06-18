@@ -99,8 +99,7 @@ export interface ExtendedProcessMetric extends Electron.ProcessMetric {
   }[];
 }
 
-const getExtendedAppMetrics = (app: Electron.App) => {
-  const appMetrics = app.getAppMetrics();
+const getExtendedAppMetrics = (appMetrics: Electron.ProcessMetric[]) => {
   const allWebContents = webContents.getAllWebContents();
   const webContentsInfo = allWebContents.map((wc: overridenWebContents) => ({
     type: wc.getType(),
@@ -135,9 +134,8 @@ const getExtendedAppMetrics = (app: Electron.App) => {
  * @param options
  */
 export const onExtendedProcessMetrics = (app: Electron.App, options: onProcessMetricsOptions = {}) =>
-  Observable.interval(options.samplingInterval || 1000).map(() => {
-    return getExtendedAppMetrics(app);
-  });
+  onProcessMetrics(app, options)
+    .map(getExtendedAppMetrics);
 
 export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
   /**Number of samples to consider */
