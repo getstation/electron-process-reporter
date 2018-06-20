@@ -75,7 +75,7 @@ export const onProcessMetrics = (
 };
 
 /**
- * Returns an Observable that emits PidUsage[] on a regular interval.
+ * Returns an Rx.Observable that emits `PidUsage[]` every `options.samplingInterval` ms.
  *
  * For a given `childPid` and a given `samplingInterval`, the returned observable is shared
  * for performance reasons.
