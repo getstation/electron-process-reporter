@@ -77,16 +77,31 @@ export const onProcessMetrics = (
 /**
  * Returns an Observable that emits PidUsage[] on a regular interval.
  *
- * For a given `pid` and a given `samplingInterval`, the returned observable is shared
+ * For a given `childPid` and a given `samplingInterval`, the returned observable is shared
  * for performance reasons.
+ * The parent pid of `childPid` is the root of the process tree,
+ * but is not a part of the end result. That way, we monitor
+ * the same processes as `getAppMetrics`.
  *
- * options.samplingInterval = 1000 (1s) by default
- * @param pid
- * @param options
+ * @param childPid
+ * @param {object} options
+ * @param {number} options.samplingInterval - 1000 (1s) by default
+ *
+ * @example
+ * - ppid
+ *   - childPid: main process
+ *   - rendererPid1: renderer process
+ *   - rendererPid2: renderer process
+ *
+ * We give `childPid` as a parameter to this method,
+ * and it will monitor `childPid`, `rendererPid1` and `rendererPid2` (ppid is NOT included).
  */
-export const onProcessMetricsForPid = (pid: number, options: onProcessMetricsOptions): Observable<PidUsage[]> => {
+export const onProcessTreeMetricsForPid = (
+  childPid: number,
+  options: onProcessMetricsOptions
+): Observable<PidUsage[]> => {
   options = { samplingInterval: 1000, ...options };
-  return getSharedProcessMetricsPollerByPid(pid, options.samplingInterval);
+  return getSharedProcessMetricsPollerByPid(childPid, options.samplingInterval);
 };
 
 export interface ExtendedProcessMetric extends Electron.ProcessMetric {
@@ -134,8 +149,7 @@ const getExtendedAppMetrics = (appMetrics: Electron.ProcessMetric[]) => {
  * @param options
  */
 export const onExtendedProcessMetrics = (app: Electron.App, options: onProcessMetricsOptions = {}) =>
-  onProcessMetrics(app, options)
-    .map(getExtendedAppMetrics);
+  onProcessMetrics(app, options).map(getExtendedAppMetrics);
 
 export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
   /**Number of samples to consider */
@@ -145,28 +159,36 @@ export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
 }
 
 /**
- * Will emit an array `PidUsage` when a process exceeds the
+ * Will emit an array of `PidUsage` when a process of the tree exceeds the
  * `options.percentCPUUsageThreshold` on more than `options.samplesCount`
  * samples.
- * It monitors the whole tree of pids, the root beeing the parent of `pid`.
+ * It monitors the whole tree of pids, the root beeing the parent of `childPid`.
  * The reason behind this is that the `process.pid` of the main process is at the same
  * level as all renderers.
  * So we fetch their common ancestor, which is the `ppid` of the main process.
+ * The parent pid of `childPid` is not part of the end result
+ * (that way, we monitor the same processes as `getAppMetrics`).
+ *
+ * In opposite to onExcessiveCPUUsage, onExcessiveCPUUsageInProcessTree does not use
+ * Electron's internal measurement but rather use `pidusage`, a cross-platform
+ * process cpu % and memory usage of a PID. It is known to have lower pressure on CPU.
+ * Also, as this leverage `pidusage`, the measures on Windows can be considered
+ * as not accurate.
  *
  * Default `options.samplesCount` = 10
  * Default `options.percentCPUUsageThreshold` = 80
  *
- * @param pid the pid of the main process
+ * @param childPid - the pid of the main process
  * @param options
  */
-export const onExcessiveCPUUsageFromMainPid = (pid: number, options: onExcessiveCPUUsageOptions) => {
+export const onExcessiveCPUUsageInProcessTree = (childPid: number, options: onExcessiveCPUUsageOptions) => {
   options = {
     samplesCount: 10,
     percentCPUUsageThreshold: 80,
     ...options,
   };
 
-  return onProcessMetricsForPid(pid, options)
+  return onProcessTreeMetricsForPid(childPid, options)
     .map(appUsage => Observable.from(appUsage))
     .mergeAll()
     .groupBy(appUsage => appUsage.pid)
