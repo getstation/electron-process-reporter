@@ -5,7 +5,7 @@
     "test": "mocha --opts tests/mocha.opts tests/**/*-test.{ts,tsx} && npm run lint && npm run build",
     "lint": "eslint 'src/**/*.{ts,tsx}' 'tests/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx}' 'tests/**/*.{ts,tsx}'",
-    "build": "rm -rf lib && tsc -p . && rm -fr lib/tests && mv lib/src/** lib/ && rm -fr lib/src",
+    "build": "rimraf lib && tsc -p .",
     "prepublish": "npm run build"
   },
   "main": "lib/index.js",
@@ -36,6 +36,7 @@
     "mocha": "^5.2.0",
     "mocha-clean": "^1.0.0",
     "prettier": "^1.13.4",
+    "rimraf": "^2.6.2",
     "ts-node": "^6.1.0",
     "typescript": "^2.8.0",
     "typescript-eslint-parser": "^16.0.0"
