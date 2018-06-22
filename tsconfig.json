@@ -5,12 +5,19 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmitOnError": true,
-    "target": "es6",
+    "target": "es2017",
     "declaration": true,
     "removeComments": false,
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "pretty": true
-  }
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
 }
