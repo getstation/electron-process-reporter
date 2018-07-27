@@ -38,7 +38,7 @@ const getAppUsage = (pid: number): Promise<PidUsage[]> => {
   return getPpid(pid)
     .then(pidtree)
     .then(pidusage)
-    .then((usages: any) => Object.values(usages) as PidUsage[]);
+    .then((usages: any) => Object.values(usages).filter(Boolean) as PidUsage[]);
 };
 
 let getSharedProcessMetricsPollerByPid = (pid: number, samplingInterval: number) =>
