@@ -1,6 +1,6 @@
 {
   "name": "electron-process-reporter",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "scripts": {
     "test": "mocha --opts tests/mocha.opts tests/**/*-test.{ts,tsx} && npm run lint && npm run build",
     "lint": "eslint 'src/**/*.{ts,tsx}' 'tests/**/*.{ts,tsx}'",
