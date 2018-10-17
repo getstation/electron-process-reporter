@@ -42,7 +42,7 @@
     "typescript-eslint-parser": "^16.0.0"
   },
   "dependencies": {
-    "memoizee": "^0.4.11",
+    "memoizee": "^0.4.14",
     "pidtree": "^0.3.0",
     "pidusage": "2.0.16",
     "rxjs": "^5.5.6"
