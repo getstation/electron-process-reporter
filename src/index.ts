@@ -27,7 +27,7 @@ export interface PidUsage {
   timestamp: number;
 }
 
-const getAppUsage = (pid: number): Promise<PidUsage[]> => {
+export const getAppUsage = (pid: number): Promise<PidUsage[]> => {
   return pidtree(pid, { root: true })
     .then(pidusage)
     .then((usages: any) => Object.values(usages).filter(Boolean) as PidUsage[]);
