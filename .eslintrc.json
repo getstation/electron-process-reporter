@@ -1,6 +1,6 @@
 {
   "parser": "typescript-eslint-parser",
-  "extends": ["airbnb", "prettier", "typescript", "typescript/prettier"],
+  "extends": ["airbnb-base", "prettier", "typescript", "typescript/prettier"],
   "plugins": ["typescript"],
   "rules": {
     "prettier/prettier": "error",
@@ -15,11 +15,13 @@
   },
   "settings": {
     "import/resolver": {
-      "node": true,
+      "node": {
+        "extensions": [".js", ".ts"]
+      },
       "typescript": true
     },
     "import/parsers": {
-      "typescript-eslint-parser": [".ts", { "comment": true }]
+      "typescript-eslint-parser": [".ts", ".tsx", { "comment": true }]
     }
   }
 }
