@@ -1,4 +1,5 @@
 # https://www.appveyor.com/docs/appveyor-yml/
+# Disabled: see https://github.com/simonepri/pidtree/issues/7
 environment:
   matrix:
     - nodejs_version: 8
@@ -26,8 +27,6 @@ install:
   - refreshenv
   - yarn
 
-# See https://github.com/simonepri/pidtree/issues/7
-test: off
 test_script:
   - yarn --version
   - yarn run test
