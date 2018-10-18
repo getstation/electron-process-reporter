@@ -13,7 +13,7 @@ describe('Application launch', function() {
   });
 
   this.beforeAll(() => {
-    return app.start();
+    return app.start().then(() => app.client.waitUntilWindowLoaded());
   });
 
   this.afterAll(() => {
@@ -24,12 +24,28 @@ describe('Application launch', function() {
 
   it('ensures that extracted pids are the same as those of getAppMetrics', async () => {
     const metrics = await app.electron.remote.app.getAppMetrics();
-    const electronPids = metrics.map(m => m.pid);
+    const electronPids = new Set(metrics.map(m => m.pid));
     // Spectron TS definition is 🤢
     const mainPid: number = await (app.mainProcess.pid as any)();
     return getAppUsage(mainPid).then(pidusages => {
-      const pids = pidusages.map(m => m.pid);
-      expect(pids.sort()).to.deep.equal(electronPids.sort());
+      const pids = new Set(pidusages.map(m => m.pid));
+      // Linux and windows can have zygote process
+      // which does not appear in getAppMetrics
+      // but which are part of process tree.
+      const zygotePids = [...pids].filter(x => !electronPids.has(x));
+      expect(zygotePids).to.have.lengthOf.at.most(1);
+      if (zygotePids.length === 1) {
+        // zygote process here
+        expect(pidusages.find(pu => pu.pid === zygotePids[0]))
+          .to.have.property('ppid')
+          .to.equal(mainPid);
+        const pidsWithoutZygote = new Set([...pids]);
+        pidsWithoutZygote.delete(zygotePids[0]);
+        expect(pidsWithoutZygote).to.deep.equal(electronPids);
+      } else {
+        // no zygote process
+        expect(pids).to.deep.equal(electronPids);
+      }
     });
   });
 });

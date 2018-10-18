@@ -22,6 +22,7 @@ export interface PidUsage {
   cpu: number;
   memory: number;
   pid: number;
+  ppid: number;
   ctime: number;
   elapsed: number;
   timestamp: number;
