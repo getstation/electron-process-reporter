@@ -1,0 +1,32 @@
+# https://www.appveyor.com/docs/appveyor-yml/
+# Disabled: see https://github.com/simonepri/pidtree/issues/7
+environment:
+  matrix:
+    - nodejs_version: 8
+
+cache:
+  - node_modules -> package.json
+  - "%LOCALAPPDATA%\\Yarn"
+
+matrix:
+  fast_finish: true
+
+platform: x64
+
+build: off
+
+version: '{build}'
+
+shallow_clone: true
+
+clone_depth: 1
+
+install:
+  - ps: Install-Product node $env:nodejs_version $env:platform
+  - set CI=true
+  - refreshenv
+  - yarn
+
+test_script:
+  - yarn --version
+  - yarn run test

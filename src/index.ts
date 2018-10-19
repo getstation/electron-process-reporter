@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 
 import extractURLDomain from './extractURLDomain';
 
-// looks like Ectron does not give `getType` to webContents
+// looks like Electron does not give `getType` to webContents
 interface overridenWebContents extends webContents {
   getType(): string;
 }
@@ -21,22 +21,15 @@ export interface onProcessMetricsOptions {
 export interface PidUsage {
   cpu: number;
   memory: number;
-  ppid: number;
   pid: number;
+  ppid: number;
   ctime: number;
   elapsed: number;
   timestamp: number;
 }
 
-let getPpid = (pid: number): Promise<number> => {
-  return pidtree(pid, { root: true, advanced: true }).then(([{ ppid }]: PidUsage[]) => ppid);
-};
-
-getPpid = memoize(getPpid, { promise: true });
-
-const getAppUsage = (pid: number): Promise<PidUsage[]> => {
-  return getPpid(pid)
-    .then(pidtree)
+export const getAppUsage = (pid: number): Promise<PidUsage[]> => {
+  return pidtree(pid, { root: true })
     .then(pidusage)
     .then((usages: any) => Object.values(usages).filter(Boolean) as PidUsage[]);
 };
@@ -77,31 +70,25 @@ export const onProcessMetrics = (
 /**
  * Returns an Rx.Observable that emits `PidUsage[]` every `options.samplingInterval` ms.
  *
- * For a given `childPid` and a given `samplingInterval`, the returned observable is shared
+ * For a given `pid` and a given `samplingInterval`, the returned observable is shared
  * for performance reasons.
- * The parent pid of `childPid` is the root of the process tree,
- * but is not a part of the end result. That way, we monitor
- * the same processes as `getAppMetrics`.
+ * `pid` is the root of the process tree.
  *
- * @param childPid
+ * @param pid
  * @param {object} options
  * @param {number} options.samplingInterval - 1000 (1s) by default
  *
  * @example
- * - ppid
- *   - childPid: main process
+ * - pid: main process
  *   - rendererPid1: renderer process
  *   - rendererPid2: renderer process
- *
- * We give `childPid` as a parameter to this method,
- * and it will monitor `childPid`, `rendererPid1` and `rendererPid2` (ppid is NOT included).
  */
 export const onProcessTreeMetricsForPid = (
-  childPid: number,
+  pid: number,
   options: onProcessMetricsOptions
 ): Observable<PidUsage[]> => {
   options = { samplingInterval: 1000, ...options };
-  return getSharedProcessMetricsPollerByPid(childPid, options.samplingInterval);
+  return getSharedProcessMetricsPollerByPid(pid, options.samplingInterval);
 };
 
 export interface ExtendedProcessMetric extends Electron.ProcessMetric {
@@ -162,7 +149,7 @@ export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
  * Will emit an array of `PidUsage` when a process of the tree exceeds the
  * `options.percentCPUUsageThreshold` on more than `options.samplesCount`
  * samples.
- * It monitors the whole tree of pids, the root beeing the parent of `childPid`.
+ * It monitors the whole tree of pids, starting from `childPid`.
  * The reason behind this is that the `process.pid` of the main process is at the same
  * level as all renderers.
  * So we fetch their common ancestor, which is the `ppid` of the main process.
@@ -178,17 +165,17 @@ export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
  * Default `options.samplesCount` = 10
  * Default `options.percentCPUUsageThreshold` = 80
  *
- * @param childPid - the pid of the main process
+ * @param pid - the pid of the main process
  * @param options
  */
-export const onExcessiveCPUUsageInProcessTree = (childPid: number, options: onExcessiveCPUUsageOptions) => {
+export const onExcessiveCPUUsageInProcessTree = (pid: number, options: onExcessiveCPUUsageOptions) => {
   options = {
     samplesCount: 10,
     percentCPUUsageThreshold: 80,
     ...options,
   };
 
-  return onProcessTreeMetricsForPid(childPid, options)
+  return onProcessTreeMetricsForPid(pid, options)
     .map(appUsage => Observable.from(appUsage))
     .mergeAll()
     .groupBy(appUsage => appUsage.pid)

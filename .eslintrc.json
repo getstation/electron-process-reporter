@@ -1,22 +1,23 @@
 {
   "parser": "typescript-eslint-parser",
-  "extends": ["airbnb", "prettier", "typescript", "typescript/react", "typescript/prettier"],
+  "extends": ["airbnb-base", "prettier", "typescript", "typescript/prettier"],
   "plugins": ["typescript"],
   "rules": {
-    "react/jsx-filename-extension": [1, { "extensions": [".tsx"] }],
     "prettier/prettier": "error",
     "import/extensions": 0,
     "import/no-extraneous-dependencies": [
       "error",
       {
-        "devDependencies": ["webpack.config.js", "tests/**/*.{ts,tsx}"]
+        "devDependencies": ["webpack.config.js", "tests/**/*.ts"]
       }
     ],
     "require-jsdoc": 0
   },
   "settings": {
     "import/resolver": {
-      "node": true,
+      "node": {
+        "extensions": [".js", ".ts"]
+      },
       "typescript": true
     },
     "import/parsers": {

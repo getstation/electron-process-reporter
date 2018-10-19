@@ -1,5 +1,5 @@
-import { parse } from 'url';
 import * as memoize from 'memoizee';
+import { parse } from 'url';
 
 const extractURLDomain = (urlString: string): string => {
   const url = parse(urlString);
@@ -9,7 +9,7 @@ const extractURLDomain = (urlString: string): string => {
   }
 
   return '';
-}
+};
 
 // memoize it for performance
 export default memoize(extractURLDomain, { max: 100 });
