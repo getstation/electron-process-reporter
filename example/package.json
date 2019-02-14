@@ -1,0 +1,7 @@
+{
+  "name": "electron-process-reporter-example-app",
+  "version": "0.0.1",
+  "description": "An example application for electron-process-reporter module",
+  "main": "main.js",
+  "private": true
+}
