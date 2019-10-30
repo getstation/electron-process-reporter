@@ -1,19 +1,20 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import { Application } from 'spectron';
 import { getAppUsage } from '../src';
-
-let electronPath = path.resolve(__dirname, '..', 'node_modules', '.bin', 'electron');
-if (process.platform === 'win32') electronPath += '.cmd';
+import { resolve } from 'path';
 
 describe('Application launch', function() {
   this.timeout(10000);
-  let app = new Application({
-    path: electronPath,
-  });
+  let app: Application;
 
-  this.beforeAll(() => {
-    return app.start().then(() => app.client.waitUntilWindowLoaded());
+  this.beforeAll(async () => {
+    app = new Application({
+      path: require('electron') as any,
+      args: [resolve(__dirname, 'browserWindowEntry.js')],
+    });
+
+    await app.start();
+    return app.client.waitUntilWindowLoaded();
   });
 
   this.afterAll(() => {

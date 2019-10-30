@@ -8,12 +8,7 @@ import { Observable } from 'rxjs';
 
 import extractURLDomain from './extractURLDomain';
 
-// looks like Electron does not give `getType` to webContents
-interface overridenWebContents extends webContents {
-  getType(): string;
-}
-
-export interface onProcessMetricsOptions {
+export interface OnProcessMetricsOptions {
   /** in ms */
   samplingInterval?: number;
 }
@@ -61,7 +56,7 @@ getSharedProcessMetricsPollerByApp = memoize(getSharedProcessMetricsPollerByApp)
  */
 export const onProcessMetrics = (
   app: Electron.App,
-  options: onProcessMetricsOptions
+  options: OnProcessMetricsOptions
 ): Observable<Electron.ProcessMetric[]> => {
   options = { samplingInterval: 1000, ...options };
   return getSharedProcessMetricsPollerByApp(app, options.samplingInterval);
@@ -85,7 +80,7 @@ export const onProcessMetrics = (
  */
 export const onProcessTreeMetricsForPid = (
   pid: number,
-  options: onProcessMetricsOptions
+  options: OnProcessMetricsOptions
 ): Observable<PidUsage[]> => {
   options = { samplingInterval: 1000, ...options };
   return getSharedProcessMetricsPollerByPid(pid, options.samplingInterval);
@@ -103,7 +98,7 @@ export interface ExtendedProcessMetric extends Electron.ProcessMetric {
 
 const getExtendedAppMetrics = (appMetrics: Electron.ProcessMetric[]) => {
   const allWebContents = webContents.getAllWebContents();
-  const webContentsInfo = allWebContents.map((wc: overridenWebContents) => ({
+  const webContentsInfo = allWebContents.map(wc => ({
     type: wc.getType(),
     id: wc.id,
     pid: wc.getOSProcessId(),
@@ -135,10 +130,10 @@ const getExtendedAppMetrics = (appMetrics: Electron.ProcessMetric[]) => {
  * @param app the electron app instance
  * @param options
  */
-export const onExtendedProcessMetrics = (app: Electron.App, options: onProcessMetricsOptions = {}) =>
+export const onExtendedProcessMetrics = (app: Electron.App, options: OnProcessMetricsOptions = {}) =>
   onProcessMetrics(app, options).map(getExtendedAppMetrics);
 
-export interface onExcessiveCPUUsageOptions extends onProcessMetricsOptions {
+export interface onExcessiveCPUUsageOptions extends OnProcessMetricsOptions {
   /**Number of samples to consider */
   samplesCount?: number;
   /**CPU usage percent minimum to consider a sample exceeds CPU usage */
