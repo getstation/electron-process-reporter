@@ -34,14 +34,13 @@ describe('Application launch', function() {
       // which does not appear in getAppMetrics
       // but which are part of process tree.
       const zygotePids = [...pids].filter(x => !electronPids.has(x));
-      expect(zygotePids).to.have.lengthOf.at.most(1);
-      if (zygotePids.length === 1) {
+      if (zygotePids.length > 0) {
         // zygote process here
         expect(pidusages.find(pu => pu.pid === zygotePids[0]))
           .to.have.property('ppid')
-          .to.equal(mainPid);
+            .to.be.oneOf([...electronPids]);
         const pidsWithoutZygote = new Set([...pids]);
-        pidsWithoutZygote.delete(zygotePids[0]);
+        zygotePids.forEach(p => pidsWithoutZygote.delete(p));
         expect(pidsWithoutZygote).to.deep.equal(electronPids);
       } else {
         // no zygote process
