@@ -4,7 +4,8 @@ import * as memoize from 'memoizee';
 import * as pidtree from 'pidtree';
 // @ts-ignore: no declaration file
 import * as pidusage from 'pidusage';
-import { Observable } from 'rxjs';
+import { from ,Observable, timer } from 'rxjs';
+import { bufferCount, filter, groupBy, map, mergeAll, mergeMap, reduce, share } from 'rxjs/operators';
 
 import extractURLDomain from './extractURLDomain';
 
@@ -30,17 +31,21 @@ export const getAppUsage = (pid: number): Promise<PidUsage[]> => {
 };
 
 let getSharedProcessMetricsPollerByPid = (pid: number, samplingInterval: number) =>
-  Observable.timer(0, samplingInterval)
-    .map(() => Observable.fromPromise(getAppUsage(pid)))
-    .mergeAll()
-    .share();
+  timer(0, samplingInterval)
+    .pipe(
+      map(() => from(getAppUsage(pid))),
+      mergeAll(),
+      share()
+    );
 
 getSharedProcessMetricsPollerByPid = memoize(getSharedProcessMetricsPollerByPid);
 
 let getSharedProcessMetricsPollerByApp = (app: Electron.App, samplingInterval: number) =>
-  Observable.timer(0, samplingInterval)
-    .map(() => app.getAppMetrics())
-    .share();
+  timer(0, samplingInterval)
+    .pipe(
+      map(() => app.getAppMetrics()),
+      share()
+    );
 
 getSharedProcessMetricsPollerByApp = memoize(getSharedProcessMetricsPollerByApp);
 
@@ -131,7 +136,8 @@ const getExtendedAppMetrics = (appMetrics: Electron.ProcessMetric[]) => {
  * @param options
  */
 export const onExtendedProcessMetrics = (app: Electron.App, options: OnProcessMetricsOptions = {}) =>
-  onProcessMetrics(app, options).map(getExtendedAppMetrics);
+  onProcessMetrics(app, options)
+    .pipe(map(getExtendedAppMetrics));
 
 export interface onExcessiveCPUUsageOptions extends OnProcessMetricsOptions {
   /**Number of samples to consider */
@@ -171,15 +177,24 @@ export const onExcessiveCPUUsageInProcessTree = (pid: number, options: onExcessi
   };
 
   return onProcessTreeMetricsForPid(pid, options)
-    .map(appUsage => Observable.from(appUsage))
-    .mergeAll()
-    .groupBy(appUsage => appUsage.pid)
-    .map(g => g.bufferCount(options.samplesCount))
-    .mergeAll()
-    .filter(processMetricsSamples => {
-      const excessiveSamplesCount = processMetricsSamples.filter(p => p.cpu >= options.percentCPUUsageThreshold).length;
-      return excessiveSamplesCount === processMetricsSamples.length;
-    });
+    .pipe(
+      map(appUsage => from(appUsage)),
+      mergeAll(),
+      groupBy(appUsage => appUsage.pid),
+      mergeMap(group => {
+        return group.pipe(
+          reduce((acc, item) => { acc.push(item); return acc; }, Array<PidUsage>())
+        );
+      }),
+      bufferCount(options.samplesCount),
+      mergeAll(),
+      filter(processMetricsSamples => {
+        const excessiveSamplesCount = processMetricsSamples.filter(
+          p => p.cpu >= options.percentCPUUsageThreshold
+        ).length;
+        return excessiveSamplesCount === processMetricsSamples.length;
+      })
+    );
 };
 
 /**
@@ -201,15 +216,21 @@ export const onExcessiveCPUUsage = (app: Electron.App, options: onExcessiveCPUUs
   };
 
   return onExtendedProcessMetrics(app, options)
-    .map(report => Observable.from(report))
-    .mergeAll()
-    .groupBy(processMetric => processMetric.pid)
-    .map(g => g.bufferCount(options.samplesCount))
-    .mergeAll()
-    .filter(processMetricsSamples => {
-      const excessiveSamplesCount = processMetricsSamples.filter(
-        p => p.cpu.percentCPUUsage >= options.percentCPUUsageThreshold
-      ).length;
-      return excessiveSamplesCount == processMetricsSamples.length;
-    });
+    .pipe(
+      mergeAll(),
+      groupBy(processMetric => processMetric.pid),
+      mergeMap(group => {
+        return group.pipe(
+          reduce((acc, item) => { acc.push(item); return acc; }, Array<ExtendedProcessMetric>())
+        );
+      }),
+      bufferCount(options.samplesCount),
+      mergeAll(),
+      filter(processMetricsSamples => {
+        const excessiveSamplesCount = processMetricsSamples.filter(
+          p => p.cpu.percentCPUUsage >= options.percentCPUUsageThreshold
+        ).length;
+        return excessiveSamplesCount == processMetricsSamples.length;
+      })
+    );
 };
