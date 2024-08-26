@@ -1,6 +1,6 @@
 {
-  "name": "electron-process-reporter",
-  "version": "1.5.0",
+  "name": "@getstation/electron-process-reporter",
+  "version": "2.0.0",
   "scripts": {
     "test": "xvfb-maybe mocha --exit --opts tests/mocha.opts tests/*-test.ts && npm run build",
     "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
@@ -44,5 +44,6 @@
     "pidtree": "^0.6.0",
     "pidusage": "3.0.2",
     "rxjs": "^6.6.7"
-  }
+  },
+  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }
